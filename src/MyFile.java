@@ -1,31 +1,34 @@
 import java.util.ArrayList;
 
-
 public class MyFile {
-	String name;
+	String fileName;
 	String contents;
-	ArrayList<Integer> allocatedBlocks;
-	public MyFile() {
-		super();
-		// TODO Auto-generated constructor stub
+	int fileSize;
+	public int getFileSize() {
+		return fileSize;
 	}
-	public String getName() {
-		return name;
+	public void setFileSize(int fileSize) {
+		this.fileSize = fileSize;
 	}
-	public void setName(String name) {
-		this.name = name;
+	ArrayList<Integer> usedBlocks;
+	boolean isDeleted;
+	
+	public String getFileName() {
+		return fileName;
 	}
-	public ArrayList<Integer> getAllocatedBlocks() {
-		return allocatedBlocks;
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
 	}
-	public void setAllocatedBlocks(ArrayList<Integer> allocatedBlocks) {
-		this.allocatedBlocks = allocatedBlocks;
+	public ArrayList<Integer> getUsedBlocks() {
+		return usedBlocks;
 	}
-	boolean deleted;
-	public MyFile(String name, String contents, ArrayList<Integer> allocatedBlocks) {
-		this.name = name;
+	public void setUsedBlocks(ArrayList<Integer> usedBlocks) {
+		this.usedBlocks = usedBlocks;
+	}
+	public MyFile(String fileName, String contents, ArrayList<Integer> usedBlocks) {
+		this.fileName = fileName;
 		this.contents = contents;
-		this.allocatedBlocks = allocatedBlocks;
-		deleted=false;
+		this.usedBlocks = usedBlocks;
+		isDeleted=false;
 	}
 }

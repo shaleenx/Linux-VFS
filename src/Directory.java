@@ -1,44 +1,38 @@
 import java.util.ArrayList;
 
 public class Directory {
-	String name;
-	public ArrayList<MyFile> files;
-	public void setFiles(ArrayList<MyFile> files) {
-		this.files = files;
-	}
-
+	String dirName;
+	public ArrayList<MyFile> myFiles;
 	public ArrayList<Directory> subDirectory;
-	boolean deleted = false;
+	boolean isDeleted = false;
 
-	public Directory() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-
-	public Directory(String name) {
-		this.name = name;
-		files = new ArrayList<>();
+	public Directory(String dirName) {
+		this.dirName = dirName;
+		myFiles = new ArrayList<>();
 		subDirectory = new ArrayList<>();
 	}
 
-	public void printDirectoryStructure(int level) {
+	public void setFiles(ArrayList<MyFile> myFiles) {
+		this.myFiles = myFiles;
+	}
+	
+	public void showFileList(int level) {
 		for (int i = 0; i < level; i++) {
 			System.out.print(" ");
 		}
-		if (!this.deleted) {
-			System.out.print("<" + name + ">");
-			System.out.println();
-			for (MyFile file : files) {
-				for (int i = 0; i < level + 5; i++) {
+		if (!this.isDeleted) {
+			System.out.println("(" + dirName + ")");
+			for (MyFile file : myFiles) {
+				for (int i = 0; i < level + 5; i++)
 					System.out.print(" ");
-				}
-				System.out.println(file.name
-						+ (file.deleted ? " is deleted" : ""));
+				System.out.println(file.getFileName()
+						+ (file.isDeleted ? " (Deleted)" : ""));
 			}
 			for (int i = 0; i < subDirectory.size(); i++) {
-				subDirectory.get(i).printDirectoryStructure(level + 6);
+				subDirectory.get(i).showFileList(level + 6);
 			}
-		} else
-			System.out.print("<" + name + "> is deleted");
+		} 
+		else
+			System.out.print("(" + dirName + ") Deleted");
 	}
 }

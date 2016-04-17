@@ -1,62 +1,101 @@
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Scanner;
 
 public class MainLine {
 
+	/*
+	 * Author: Shaleen Kumar Gupta
+	 * Date: April 15, 2016
+	 * 
+	 * A Linux-like Virtual File System for storing files and directories
+	 * in an hierarchical directory structure.
+	 * 
+	 * Implementation Type: Best-fit Contiguous Memory Allocation
+	 * 
+	 * Undertook as part of Operating Systems Course Project
+	 * 
+	 * Credits: Modern Operating Systems (Andrew S. Tannebaum)
+	 */
+	
 	static Scanner sc;
+	@SuppressWarnings("unused")
+	private static FileInputStream is;
 	
 	public static void main(String[] args) throws Exception {
-		// TODO Auto-generated method stub
-		
 		FileSystem vfs;
-		String filePath = "MyDisk.sys";
+		String filePath = "MyDisk.sys";	/* The VFS storage in hard disk */
 		sc = new Scanner(System.in);
 		
 		try{
-			FileInputStream is;
+			/* For existing VFS, if found at the specified location*/
 			is = new FileInputStream(new File(filePath));
 			System.out.print("Existing VFS found!...");
 			vfs = read(filePath);
 			System.out.println("Loaded");
+			/*Start CLI Shell*/
 			cmd(vfs);
+			System.out.println("Saving System...");
+			/*Writing the VFS to hard disk (in MyDisk.sys)*/
 			vfs.write(vfs, filePath);
+			System.out.println("System Saved");
+			System.out.println("Program exited gracefully");
 		}
 		catch(FileNotFoundException e){
-			System.out.println("Enter size of new VFS: ");
+			/* If an existing VFS is not found, create a new VFS */
+			System.out.print("Enter size of new VFS (in Bytes): ");
 			int totalSize = sc.nextInt(); 
 			vfs = new FileSystem(totalSize);
 			System.out.println("New File System Initialized");
 			cmd(vfs);
+			System.out.println("Saving System...");
+			/*Writing the VFS to hard disk (in MyDisk.sys)*/
 			vfs.write(vfs, filePath);
+			System.out.println("System Saved");
+			System.out.println("Program exited gracefully");
 		}
 		System.out.println("");
 	}
 	
+	/*
+	 * Method to run the CLI Shell
+	 * 
+	 * Input params: A FileSystem object to store data in
+	 * Output Params: Void
+	 */
 	public static void cmd(FileSystem vfs){
 		String cmd = "";
 		sc = new Scanner(System.in);
 		while(!cmd.equalsIgnoreCase("exit")){
-			System.out.print(">>>");
+			System.out.print("shaleen@localhost:~$ ");	/*That would be me*/
 			cmd = sc.nextLine().trim();
 			String input[] = cmd.split(" ");
 			switch(input[0]){
-				case "touch":
+				case "echo":
 					if(input.length != 2){
-						System.out.println("touch - create new file");
-						System.out.println("Usage: create <filename>");
+						System.out.println("echo - write contents from the console into a new file");
+						System.out.println("Usage: echo <filename>");
 						break;
 					}
-					System.out.print("Enter Size: ");
-					int size = sc.nextInt();
-					if(vfs.createFile(input[1], size))
+					System.out.println("Enter Contents: ");
+					String contents = sc.nextLine().trim();
+					int size = contents.length();
+					if(vfs.create(input[1], contents, size))
 						System.out.println("File Created");
 					else
 						System.out.println("Error Creating File");
+					break;
+				case "cat":
+					if(input.length != 2){
+						System.out.println("cat - print file on standard output");
+						System.out.println("Usage: cat <filename>");
+						break;
+					}
+					if(!vfs.cat(input[1]))
+						System.out.println("Incorrect path or File does not exists");
 					break;
 				case "rm":
 					if(input.length != 2){
@@ -64,7 +103,7 @@ public class MainLine {
 						System.out.println("Usage: rm <filename>");
 						break;
 					}
-					if(vfs.deleteFile(input[1]))
+					if(vfs.rm(input[1]))
 						System.out.println("File Deleted");
 					else
 						System.out.println("Error Deleting File");
@@ -75,8 +114,8 @@ public class MainLine {
 						System.out.println("Usage: mkdir <foldername>");
 						break;
 					}
-					vfs.createFolder(input[1]);
-					System.out.println("->folder has been created");
+					vfs.mkdir(input[1]);
+					System.out.println("Directory created");
 					break;
 				case "rmdir":
 					if(input.length != 2){
@@ -84,12 +123,12 @@ public class MainLine {
 						System.out.println("Usage: rmdir <foldername>");
 						break;
 					}
-					vfs.deleteFolder(input[1]);
-					System.out.println("->folder has been deleted");
+					vfs.rmdir(input[1]);
+					System.out.println("Directory Deleted");
 					break;
 				case "ls":
 					if(input.length != 1){
-						System.out.println("ls - list all files");
+						System.out.println("ls - list all files and directories");
 						System.out.println("Usage: ls");
 						break;
 					}
@@ -103,93 +142,54 @@ public class MainLine {
 					}
 					vfs.showMemUsage();
 					break;
+				case "help":
+					System.out.println("Available Commands:");
+					System.out.println("echo, cat, rm, mkdir, rmdir, ls, top");
+					break;
+				case "exit":
+					break;
 				default:
 					System.out.println("Command Not Found");
 					System.out.println("Available Commands:");
-					System.out.println("create <filename>, rm <filename>, ls, showmemusage");
+					System.out.println("echo, cat, rm, mkdir, rmdir, ls, top");
 					break;
 			}
 		}
-		System.out.println("Saving System... Exiting Program...");
-		System.out.println("Program exited gracefully");
 	}
 	
-	public static void Main(FileSystem sys) {
-		String command = "";
-		while (!command.equals("exit")) {
-			command = new Scanner(System.in).nextLine();
-			String str[] = command.trim().split(" ");
-			switch (str[0]) {
-			case "createfile":
-				sys.createFile(str[1], Integer.parseInt(str[2]));
-				System.out.println("->file has been created");
-				break;
-			case "createfolder":
-				sys.createFolder(str[1]);
-				System.out.println("->folder has been created");
-				break;
-			case "deletefolder":
-				sys.deleteFolder(str[1]);
-				System.out.println("->folder has been deleted");
-				break;
-			case "deletefile":
-				sys.deleteFile(str[1]);
-				System.out.println("->file has been deleted");
-				break;
-			case "status":
-//				sys.DisplayDiskStatus();
-				break;
-			case "structure":
-//				sys.DisplayDiskStructure();
-				break;
-			case "exit":
-				break;
-			default:
-				System.out.println("->No match command");
-			}
-		}
-	}
-	
+	/*
+	 * Method to read existing VFS from hard disk
+	 * Input Params: Path to the '.vfs' file in hard disk
+	 * Output Params: A FileSystem object loaded with contents read from the '.vfs' file specified
+	 */
 	public static FileSystem read(String filePath) throws Exception {
-		FileInputStream is;
-		ObjectInputStream os;
-		FileSystem sys;
-		is = new FileInputStream(new File(filePath));
-		os = new ObjectInputStream(is);
-		int sizeKB, allspace = 0;
-		int t;
-		Directory root;
+		FileInputStream fis;
+		ObjectInputStream ois;
+		FileSystem vfs;
+		fis = new FileInputStream(new File(filePath));
+		ois = new ObjectInputStream(fis);
+		int totalSize, usedSpace = 0;
 		ArrayList<Boolean> state = new ArrayList<>();
 		ArrayList<Block> spaces = new ArrayList<>();
-		int currentSize = 0;
-		sizeKB = os.readInt();
-		allspace = os.readInt();
-//		t = os.readInt();
-//		if (t == 1)
-//			tech1 = new Contiguous();
-//		else
-//			tech1 = new Indexed();
-		int spa = os.readInt();
-		for (int i = 0; i < spa; i++) {
-			int start = os.readInt();
-			int end = os.readInt();
-			boolean b = os.readBoolean();
+		totalSize = ois.readInt();
+		usedSpace = ois.readInt();
+		int numberOfSpaceState = ois.readInt();
+		for (int i = 0; i < numberOfSpaceState; ++i) {
+			int start = ois.readInt();
+			int end = ois.readInt();
+			boolean b = ois.readBoolean();
 			spaces.add(new Block(start, end, b));
 		}
-		spa = os.readInt();
-		for (int i = 0; i < spa; i++) {
-			boolean b = os.readBoolean();
+		numberOfSpaceState = ois.readInt();
+		for (int i = 0; i < numberOfSpaceState; ++i) {
+			boolean b = ois.readBoolean();
 			state.add(b);
 		}
-		Directory dir = new Directory();
-		sys = new FileSystem(sizeKB);
-		sys.readTree(sys, os, 0, allspace);
-		sys.setAllspace(allspace);
-		sys.setSpaces(spaces);
-		sys.setState(state);
-		// sys.setRoot(dir);
-		return sys;
+		vfs = new FileSystem(totalSize);
+		vfs.iterativeRead(vfs, ois, 0, usedSpace);
+		vfs.setUsedSpace(usedSpace);
+		vfs.setSpaces(spaces);
+		vfs.setState(state);
+		return vfs;
 	}
-
-	
 }
