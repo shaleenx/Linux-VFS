@@ -8,15 +8,28 @@ import java.util.Scanner;
 public class MainLine {
 
 	/*
-	 * Author: Shaleen Kumar Gupta
+	 * Author: Shaleen Kumar Gupta (DA-IICT, India)
+	 * Email: shaleenx@gmail.com
 	 * Date: April 15, 2016
 	 * 
 	 * A Linux-like Virtual File System for storing files and directories
 	 * in an hierarchical directory structure.
+	 * Particular focus has been on improvising the free space allocation 
+	 * in the virtual file system. 
 	 * 
 	 * Implementation Type: Best-fit Contiguous Memory Allocation
 	 * 
-	 * Undertook as part of Operating Systems Course Project
+	 * However, the code can be easily tweaked to implement other 
+	 * memory allocation techniques, as described in comments. 
+	 * 
+	 * The project has been undertaken with the intention of learning how 
+	 * files are managed on a Linux like system. The file system implemented 
+	 * also implements a Linux Shell-like interactive command like interface 
+	 * with functionalities like creating files and folders, deleting files 
+	 * and folders, viewing the contents of a file, summarize memory usage, 
+	 * and list all files and folders.
+	 * 
+	 * Undertook as part of IT308 Operating Systems Course Project
 	 * 
 	 * Credits: Modern Operating Systems (Andrew S. Tannebaum)
 	 */
@@ -34,7 +47,7 @@ public class MainLine {
 			/* For existing VFS, if found at the specified location*/
 			is = new FileInputStream(new File(filePath));
 			System.out.print("Existing VFS found!...");
-			vfs = read(filePath);
+			vfs = readVFS(filePath);
 			System.out.println("Loaded");
 			/*Start CLI Shell*/
 			cmd(vfs);
@@ -77,7 +90,7 @@ public class MainLine {
 				case "echo":
 					if(input.length != 2){
 						System.out.println("echo - write contents from the console into a new file");
-						System.out.println("Usage: echo <filename>");
+						System.out.println("Usage: echo <path-from-root/filename>");
 						break;
 					}
 					System.out.println("Enter Contents: ");
@@ -91,7 +104,7 @@ public class MainLine {
 				case "cat":
 					if(input.length != 2){
 						System.out.println("cat - print file on standard output");
-						System.out.println("Usage: cat <filename>");
+						System.out.println("Usage: cat <path-to-file-from-root>");
 						break;
 					}
 					if(!vfs.cat(input[1]))
@@ -100,31 +113,35 @@ public class MainLine {
 				case "rm":
 					if(input.length != 2){
 						System.out.println("rm - remove file");
-						System.out.println("Usage: rm <filename>");
+						System.out.println("Usage: rm <path-to-file-from-root/filename>");
 						break;
 					}
 					if(vfs.rm(input[1]))
 						System.out.println("File Deleted");
 					else
-						System.out.println("Error Deleting File");
+						System.out.println("Error Deleting File. No such file found.");
 					break;
 				case "mkdir":
 					if(input.length != 2){
 						System.out.println("mkdir - make new directory");
-						System.out.println("Usage: mkdir <foldername>");
+						System.out.println("Usage: mkdir <path-from-root/foldername>");
 						break;
 					}
-					vfs.mkdir(input[1]);
-					System.out.println("Directory created");
+					if(vfs.mkdir(input[1]))
+						System.out.println("Directory created");
+					else
+						System.out.println("Error creating directory");
 					break;
 				case "rmdir":
 					if(input.length != 2){
 						System.out.println("rmdir - remove directory (similar to 'rm -r' on bash)");
-						System.out.println("Usage: rmdir <foldername>");
+						System.out.println("Usage: rmdir <path-from-root/foldername>");
 						break;
 					}
-					vfs.rmdir(input[1]);
-					System.out.println("Directory Deleted");
+					if(vfs.rmdir(input[1]))
+						System.out.println("Directory Deleted");
+					else
+						System.out.println("Error deleting directory. No such directory found");
 					break;
 				case "ls":
 					if(input.length != 1){
@@ -162,7 +179,7 @@ public class MainLine {
 	 * Input Params: Path to the '.vfs' file in hard disk
 	 * Output Params: A FileSystem object loaded with contents read from the '.vfs' file specified
 	 */
-	public static FileSystem read(String filePath) throws Exception {
+	public static FileSystem readVFS(String filePath) throws Exception {
 		FileInputStream fis;
 		ObjectInputStream ois;
 		FileSystem vfs;

@@ -10,6 +10,11 @@ public class FileSystem {
 	int totalSize, usedSpace = 0;
 	Directory root;
 	ArrayList<Boolean> state;
+	ArrayList<Block> spaces;
+	
+	/*
+	 * Getters and Setters
+	 */
 	public int getUsedSpace() {
 		return usedSpace;
 	}
@@ -42,8 +47,10 @@ public class FileSystem {
 		this.spaces = spaces;
 	}
 
-	ArrayList<Block> spaces;
-
+	
+	/*
+	 * The FileSystem constructor (takes in total size of the vfs to create)
+	 */
 	public FileSystem(int totalSize) {
 		this.totalSize = totalSize;
 		state = new ArrayList<>(totalSize);
@@ -55,6 +62,9 @@ public class FileSystem {
 		spaces.add(new Block(0, totalSize - 1, false));
 	}
 
+	/*
+	 * Method to create new file
+	 */
 	public boolean create(String path, String contents, int fileSize) {
 		if (fileSize > this.totalSize - this.usedSpace){
 			System.out.println("Memory Full");
@@ -74,23 +84,30 @@ public class FileSystem {
 			return false;
 	}
 
-	public boolean iterativeCreate(Directory dir, String name, String contents, int totalSize,
+	/*
+	 * Method to actually iterate over directories, 
+	 * find the exact location of the file to be made in, 
+	 * and create the file
+	 * 
+	 * Returns the size of the file created.
+	 */
+	public boolean iterativeCreate(Directory dir, String name, String contents, int fileSize,
 			ArrayList<Block> blocks, ArrayList<Boolean> state) {
 		for (Block blocki : blocks) {
-			if (totalSize <= blocki.size && !blocki.state) {
+			if (fileSize <= blocki.size && !blocki.state) {
 				ArrayList<Integer> usedBlocks = new ArrayList<>();
 				usedBlocks.add(blocki.start);
-				usedBlocks.add(blocki.start + totalSize - 1);
-				MyFile file = new MyFile(name, contents, usedBlocks);
+				usedBlocks.add(blocki.start + fileSize - 1);
+				MyFile file = new MyFile(name, contents, fileSize, usedBlocks);
 				dir.myFiles.add(file);
-				for (int i = blocki.start; i < blocki.start + totalSize; ++i) {
+				for (int i = blocki.start; i < blocki.start + fileSize; ++i) {
 					state.set(i, true);
 				}
-				if (totalSize < blocki.size) {
-					Block tempBlock = new Block(blocki.start + totalSize, blocki.end,
+				if (fileSize < blocki.size) {
+					Block tempBlock = new Block(blocki.start + fileSize, blocki.end,
 							false);
 					blocks.add(tempBlock);
-					blocki.end = blocki.start + totalSize - 1;
+					blocki.end = blocki.start + fileSize - 1;
 				}
 				blocki.state = true;
 				/*
@@ -107,6 +124,9 @@ public class FileSystem {
 		return false;	/*File Creation Failed*/
 	}
 	
+	/*
+	 * Method to create new directory
+	 */
 	public boolean mkdir(String path) {
 		String[] paths = path.trim().split("/");
 		Directory i;
@@ -117,6 +137,12 @@ public class FileSystem {
 			return false;
 	}
 	
+
+	/*
+	 * Method to actually iterate over directories, 
+	 * find the exact location of the new directory
+	 * to be made in, and create the new directory
+	 */
 	public boolean iterativeMkdir(Directory dir, String name) {
 		dir.subDirectory.add(new Directory(name));
 		return true;
@@ -138,19 +164,25 @@ public class FileSystem {
 			return false;
 	}
 	
+	/*
+	 * Method to actually iterate over directories, 
+	 * find the exact location of the file and 
+	 * delete the file
+	 * 
+	 * Returns the size of the file deleted
+	 */
 	public int iterativeRm(Directory dir, String name, ArrayList<Block> spaces,
 			ArrayList<Boolean> state) {
 		for (MyFile file : dir.myFiles) {
-			if (file.fileName.equals(name)) {
+			if (file.fileName.equals(name) && !file.isDeleted) {
 				for (Block space : spaces) {
 					if (space.start == file.usedBlocks.get(0)) {
-						System.out.println("size deleted: " + file.getFileSize());
 						space.state = false;
 						file.isDeleted = true;
 						for (int i = space.start; i < space.end; i++) {
 							state.set(i, false);
 						}
-						return space.size;
+						return file.getFileSize();
 					}
 				}
 				return 0;
@@ -159,6 +191,12 @@ public class FileSystem {
 		return 0;
 	}
 	
+	/*
+	 * Method to display the contents of a file
+	 * 
+	 * Returns false when the file is not found
+	 * at the specified path
+	 */
 	public boolean cat(String path){
 		String[] paths = path.trim().split("/");
 		Directory iter;
@@ -174,6 +212,9 @@ public class FileSystem {
 		return false;
 	}
 	
+	/*
+	 * Method to remove a directory
+	 */
 	public boolean rmdir(String path) {
 		String[] paths = path.trim().split("/");
 		Directory iter;
@@ -189,6 +230,13 @@ public class FileSystem {
 			return false;
 	}
 
+	/*
+	 * Method to actually iterate over directories, 
+	 * find the exact location of the directory
+	 * and delete it.
+	 * 
+	 * Returns the size of the directory deleted.
+	 */
 	public int iterativeRmdir(Directory dir, ArrayList<Block> spaces,
 			ArrayList<Boolean> state) {
 		int totalspace = 0;
@@ -200,7 +248,7 @@ public class FileSystem {
 					for (int i = space.start; i < space.end; i++) {
 						state.set(i, false);
 					}
-					totalspace += space.size;
+					totalspace += file.getFileSize();
 				}
 			}
 		}
@@ -211,6 +259,11 @@ public class FileSystem {
 		return totalspace;
 	}
 
+	/*
+	 * Method to save the virtual file system in hard disk
+	 * so that it may be reloaded into the program even 
+	 * after shutting down the program
+	 */
 	public void write(FileSystem vfs, String filePath) {
 		try {
 			FileOutputStream fos = new FileOutputStream(new File(filePath));
@@ -236,21 +289,37 @@ public class FileSystem {
 		}
 	}
 
+	/*
+	 * Helper method to write() which iterates over 
+	 * all the directories and write the contents 
+	 * in the file. 
+	 * 
+	 * The method happens to be recursive though.
+	 */
 	private void iterativeWrite(Directory dir, ObjectOutputStream oos,
 			String currentPath) throws IOException {
 		oos.writeObject(currentPath);
 		oos.writeInt(dir.myFiles.size());
 		for (MyFile file : dir.myFiles) {
-			oos.writeObject(currentPath + "/" + file.fileName);
-			oos.writeObject(file.contents);
-			oos.writeInt(file.usedBlocks.get(0));
-			oos.writeInt(file.usedBlocks.get(1));
+//			if(!file.isDeleted){
+				oos.writeObject(currentPath + "/" + file.fileName);
+				oos.writeObject(file.contents);
+				oos.writeInt(file.getFileSize());
+				oos.writeInt(file.usedBlocks.get(0));
+				oos.writeInt(file.usedBlocks.get(1));
+//			}
 		}
 		for (Directory dire : dir.subDirectory) {
 			iterativeWrite(dire, oos, currentPath + "/" + dire.dirName);
 		}
 	}
 	
+	/*
+	 * Iteratively read the contents of the saved hard disk
+	 * file and load it into the VFS FileSystem object.
+	 * 
+	 * The method happens to be recursive though.
+	 */
 	public void iterativeRead(FileSystem vfs, ObjectInputStream ois, int currentSize,
 			int totalsize) throws ClassNotFoundException, IOException {
 		if (currentSize < totalsize-1) {
@@ -259,9 +328,11 @@ public class FileSystem {
 			if (currentPath.equals("root")) {
 				paths = new String[1];
 				paths[0] = "root";
-			} else
+			} 
+			else{
 				paths = currentPath.trim().split("/");
-			vfs.mkdir(currentPath);
+				vfs.mkdir(currentPath);
+			}
 			Directory dir = vfs.findDirectory(vfs.root, paths, 0);
 			int fileListSize = ois.readInt();
 			ArrayList<MyFile> files = new ArrayList<>();
@@ -269,13 +340,14 @@ public class FileSystem {
 				String temp=(String) ois.readObject();
 				String s[] = (temp).split("/");
 				String contents = (String) ois.readObject();
+				int fileSize = (int) ois.readInt();
 				ArrayList<Integer> usedBlocks = new ArrayList<>();
 				int start=ois.readInt();
 				usedBlocks.add(start);
 				usedBlocks.add(ois.readInt());
 				int size = usedBlocks.get(1) - usedBlocks.get(0)+1;
 //				System.out.println(size);
-				MyFile file = new MyFile(s[s.length - 1], contents, usedBlocks);
+				MyFile file = new MyFile(s[s.length - 1], contents, fileSize, usedBlocks);
 				files.add(file);
 				currentSize += size;
 			}
@@ -284,6 +356,9 @@ public class FileSystem {
 		}
 	}
 
+	/*
+	 * Method to find a particular directory, given the path.
+	 */
 	public Directory findDirectory(Directory dir, String[] path, int level) {
 		if(path.length==1)
 			return dir;
@@ -298,22 +373,20 @@ public class FileSystem {
 		return null;
 	}
 
+	/*
+	 * Method to display all the files and folder in the virtual file system
+	 */
 	public void ls() {
 		System.out.println("Directories are names with parenthesis \'()'");
 		root.showFileList(0);
 	}
 
+	/*
+	 * Method to show memory usage.
+	 */
 	public void showMemUsage() {
 		System.out.println("Total Size of Virtual Disk: "+this.totalSize + " Bytes");
 		System.out.println("Used Space: " + this.usedSpace + " Bytes");
 		System.out.println("Free Space: " + (this.totalSize - this.usedSpace) + " Bytes");
-		System.out.println("*************Memory Blocks**************");
-		for (int i = 0; i < state.size(); i++) {
-			if(state.get(i))
-				System.out.println("Block["+i+"]: " + "<Filled>");
-			else
-				System.out.println("Block["+i+"]: " + "<Empty>");
-		}
-		System.out.println("*************Memory Blocks**************");
 	}
 }
