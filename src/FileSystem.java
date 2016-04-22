@@ -10,7 +10,7 @@ public class FileSystem {
 	int totalSize, usedSpace = 0;
 	Directory root;
 	ArrayList<Boolean> state;
-	ArrayList<Block> spaces;
+	ArrayList<EmptyBlock> emptyBlocks;
 	
 	/*
 	 * Getters and Setters
@@ -39,12 +39,12 @@ public class FileSystem {
 		this.state = state;
 	}
 
-	public ArrayList<Block> getSpaces() {
-		return spaces;
+	public ArrayList<EmptyBlock> getSpaces() {
+		return emptyBlocks;
 	}
 
-	public void setSpaces(ArrayList<Block> spaces) {
-		this.spaces = spaces;
+	public void setSpaces(ArrayList<EmptyBlock> spaces) {
+		this.emptyBlocks = spaces;
 	}
 
 	
@@ -58,8 +58,8 @@ public class FileSystem {
 			state.add(false);
 		}
 		root = new Directory("root");
-		spaces = new ArrayList<>();
-		spaces.add(new Block(0, totalSize - 1, false));
+		emptyBlocks = new ArrayList<>();
+		emptyBlocks.add(new EmptyBlock(0, totalSize - 1, false));
 	}
 
 	/*
@@ -74,12 +74,13 @@ public class FileSystem {
 		Directory i;
 		i = findDirectory(root, paths, 0);
 		if (i != null) {
-			if (iterativeCreate(i, paths[paths.length - 1], contents, fileSize, spaces,
-					state)) {
+			if (iterativeCreate(i, paths[paths.length - 1], contents, fileSize)) {
 				this.usedSpace += fileSize;
 				return true;
-			} else
-				return false;
+			} else{
+				System.out.println("create failed");
+				return false;	
+			}
 		} else
 			return false;
 	}
@@ -91,10 +92,9 @@ public class FileSystem {
 	 * 
 	 * Returns the size of the file created.
 	 */
-	public boolean iterativeCreate(Directory dir, String name, String contents, int fileSize,
-			ArrayList<Block> blocks, ArrayList<Boolean> state) {
-		for (Block blocki : blocks) {
-			if (fileSize <= blocki.size && !blocki.state) {
+	public boolean iterativeCreate(Directory dir, String name, String contents, int fileSize) {
+		for (EmptyBlock blocki : emptyBlocks) {
+			if (fileSize <= blocki.getSize() && !blocki.state) {
 				ArrayList<Integer> usedBlocks = new ArrayList<>();
 				usedBlocks.add(blocki.start);
 				usedBlocks.add(blocki.start + fileSize - 1);
@@ -103,13 +103,17 @@ public class FileSystem {
 				for (int i = blocki.start; i < blocki.start + fileSize; ++i) {
 					state.set(i, true);
 				}
-				if (fileSize < blocki.size) {
-					Block tempBlock = new Block(blocki.start + fileSize, blocki.end,
+				if (fileSize < blocki.getSize()) {
+					EmptyBlock tempBlock = new EmptyBlock(blocki.start + fileSize, blocki.end,
 							false);
-					blocks.add(tempBlock);
+					emptyBlocks.add(tempBlock);
 					blocki.end = blocki.start + fileSize - 1;
+					blocki.size = blocki.getSize();
+//					System.out.println(blocki.size);
 				}
 				blocki.state = true;
+				for(EmptyBlock bi: emptyBlocks)
+					bi.size = bi.getSize();
 				/*
 				 * The comparator is invoked to sort the ArrayList.
 				 * 
@@ -117,7 +121,7 @@ public class FileSystem {
 				 * implement worst-fit contiguous memory allocation
 				 * from best-fit memory allocation
 				 */
-				Collections.sort(blocks, new SpaceSizeCmp());
+				Collections.sort(emptyBlocks, new SpaceSizeCmp());
 				return true;
 			}
 		}
@@ -153,8 +157,7 @@ public class FileSystem {
 		Directory i;
 		i = findDirectory(root, paths, 0);
 		if (i != null) {
-			int fileSize = iterativeRm(i, paths[paths.length - 1],
-					spaces, state);
+			int fileSize = iterativeRm(i, paths[paths.length - 1]);
 			if (fileSize != 0) {
 				this.usedSpace -= fileSize;
 				return true;
@@ -171,17 +174,17 @@ public class FileSystem {
 	 * 
 	 * Returns the size of the file deleted
 	 */
-	public int iterativeRm(Directory dir, String name, ArrayList<Block> spaces,
-			ArrayList<Boolean> state) {
+	public int iterativeRm(Directory dir, String name) {
 		for (MyFile file : dir.myFiles) {
 			if (file.fileName.equals(name) && !file.isDeleted) {
-				for (Block space : spaces) {
-					if (space.start == file.usedBlocks.get(0)) {
-						space.state = false;
+				for (EmptyBlock blocki : emptyBlocks) {
+					if (blocki.start == file.usedBlocks.get(0) && blocki.state == true) {
+						blocki.state = false;
 						file.isDeleted = true;
-						for (int i = space.start; i < space.end; i++) {
+						for (int i = blocki.start; i <= blocki.end; i++) {
 							state.set(i, false);
 						}
+//						System.out.println(blocki.getSize()+" "+file.getFileSize());
 						return file.getFileSize();
 					}
 				}
@@ -203,7 +206,7 @@ public class FileSystem {
 		iter = findDirectory(root, paths, 0);
 		if (iter != null) {
 			for(MyFile file: iter.myFiles){
-				if(file.fileName.equals(paths[paths.length-1])){
+				if(file.fileName.equals(paths[paths.length-1]) && !file.isDeleted){
 					System.out.println(file.contents);
 					return true;
 				}
@@ -220,7 +223,7 @@ public class FileSystem {
 		Directory iter;
 		iter = findDirectory(root, paths, 0);
 		if (iter != null) {
-			int filesSize = iterativeRmdir(iter, spaces, state);
+			int filesSize = iterativeRmdir(iter);
 			if (filesSize != 0) {
 				this.usedSpace -= filesSize;
 				return true;
@@ -237,15 +240,14 @@ public class FileSystem {
 	 * 
 	 * Returns the size of the directory deleted.
 	 */
-	public int iterativeRmdir(Directory dir, ArrayList<Block> spaces,
-			ArrayList<Boolean> state) {
+	public int iterativeRmdir(Directory dir) {
 		int totalspace = 0;
 		for (MyFile file : dir.myFiles) {
-			for (Block space : spaces) {
-				if (space.start == file.usedBlocks.get(0)) {
-					space.state = false;
+			for (EmptyBlock blocki : emptyBlocks) {
+				if (blocki.start == file.usedBlocks.get(0)) {
+					blocki.state = false;
 					file.isDeleted = true;
-					for (int i = space.start; i < space.end; i++) {
+					for (int i = blocki.start; i <= blocki.end; i++) {
 						state.set(i, false);
 					}
 					totalspace += file.getFileSize();
@@ -253,7 +255,7 @@ public class FileSystem {
 			}
 		}
 		for (Directory dire1 : dir.subDirectory) {
-			totalspace += iterativeRmdir(dire1, spaces, state);
+			totalspace += iterativeRmdir(dire1);
 		}
 		dir.isDeleted = true;
 		return totalspace;
@@ -264,24 +266,24 @@ public class FileSystem {
 	 * so that it may be reloaded into the program even 
 	 * after shutting down the program
 	 */
-	public void write(FileSystem vfs, String filePath) {
+	public void write(String filePath) {
 		try {
 			FileOutputStream fos = new FileOutputStream(new File(filePath));
 			ObjectOutputStream oos = new ObjectOutputStream(fos);
-			oos.writeInt(vfs.totalSize);
-			oos.writeInt(vfs.usedSpace);
-			oos.writeInt(vfs.spaces.size());
-			for (Block space : vfs.spaces) {
+			oos.writeInt(this.totalSize);
+			oos.writeInt(this.usedSpace);
+			oos.writeInt(this.emptyBlocks.size());
+			for (EmptyBlock space : this.emptyBlocks) {
 				oos.writeInt(space.start);
 				oos.writeInt(space.end);
 				oos.writeBoolean(space.state);
 			}
-			oos.writeInt(vfs.state.size());
-			for (Boolean bool : vfs.state) {
+			oos.writeInt(this.state.size());
+			for (Boolean bool : this.state) {
 				oos.writeBoolean(bool);
 			}
 			String currentPath = "root";
-			iterativeWrite(vfs.root, oos, currentPath);
+			iterativeWrite(this.root, oos, currentPath);
 			oos.close();
 			fos.close();
 		} catch (Exception e) {
@@ -298,17 +300,30 @@ public class FileSystem {
 	 */
 	private void iterativeWrite(Directory dir, ObjectOutputStream oos,
 			String currentPath) throws IOException {
+		
+		ArrayList<MyFile> templist = new ArrayList<>();
+		for(MyFile f: dir.myFiles)
+			if(!f.isDeleted)
+				templist.add(f);
+		dir.setFiles(templist);
+		
 		oos.writeObject(currentPath);
 		oos.writeInt(dir.myFiles.size());
 		for (MyFile file : dir.myFiles) {
-//			if(!file.isDeleted){
+			if(!file.isDeleted){
 				oos.writeObject(currentPath + "/" + file.fileName);
 				oos.writeObject(file.contents);
 				oos.writeInt(file.getFileSize());
 				oos.writeInt(file.usedBlocks.get(0));
 				oos.writeInt(file.usedBlocks.get(1));
-//			}
+			}
 		}
+		ArrayList<Directory> tempdirlist = new ArrayList<>();
+		for(Directory direc: dir.subDirectory)
+			if(!direc.isDeleted)
+				tempdirlist.add(direc);
+		dir.setSubDirectory(tempdirlist);
+		
 		for (Directory dire : dir.subDirectory) {
 			iterativeWrite(dire, oos, currentPath + "/" + dire.dirName);
 		}
@@ -320,7 +335,7 @@ public class FileSystem {
 	 * 
 	 * The method happens to be recursive though.
 	 */
-	public void iterativeRead(FileSystem vfs, ObjectInputStream ois, int currentSize,
+	public void iterativeRead(ObjectInputStream ois, int currentSize,
 			int totalsize) throws ClassNotFoundException, IOException {
 		if (currentSize < totalsize-1) {
 			String currentPath = (String) ois.readObject();
@@ -330,10 +345,11 @@ public class FileSystem {
 				paths[0] = "root";
 			} 
 			else{
-				paths = currentPath.trim().split("/");
-				vfs.mkdir(currentPath);
-			}
-			Directory dir = vfs.findDirectory(vfs.root, paths, 0);
+				paths = (currentPath+"/foo").trim().split("/");
+				this.mkdir(currentPath);
+			}	
+			Directory dir = this.findDirectory(root, paths, 0);
+			System.out.println(currentPath+" "+dir.dirName);
 			int fileListSize = ois.readInt();
 			ArrayList<MyFile> files = new ArrayList<>();
 			for (int i = 0; i < fileListSize; i++) {
@@ -351,8 +367,9 @@ public class FileSystem {
 				files.add(file);
 				currentSize += size;
 			}
+//			System.out.println("setting "+files.toArray()+" to "+dir.dirName);
 			dir.setFiles(files);
-			iterativeRead(vfs, ois, currentSize, totalsize);
+			iterativeRead(ois, currentSize, totalsize);
 		}
 	}
 
@@ -388,5 +405,9 @@ public class FileSystem {
 		System.out.println("Total Size of Virtual Disk: "+this.totalSize + " Bytes");
 		System.out.println("Used Space: " + this.usedSpace + " Bytes");
 		System.out.println("Free Space: " + (this.totalSize - this.usedSpace) + " Bytes");
+ 		for (int i = 0; i < state.size(); i++) {
+			System.out.println("Block:[" + i + "] is "
+					+ (state.get(i) ? "Allocated" : "Empty"));
+		}
 	}
 }

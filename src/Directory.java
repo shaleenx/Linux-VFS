@@ -29,6 +29,16 @@ public class Directory {
 		this.myFiles = myFiles;
 	}
 	
+	public ArrayList<Directory> getSubDirectory() {
+		return subDirectory;
+	}
+
+	public void setSubDirectory(ArrayList<Directory> subDirectory) {
+		this.subDirectory = subDirectory;
+	}
+
+
+	
 	/*
 	 * Method to display all the files contained in the directory
 	 * by iterating over all the sub-directories and files.

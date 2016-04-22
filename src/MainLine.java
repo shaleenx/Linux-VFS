@@ -53,7 +53,7 @@ public class MainLine {
 			cmd(vfs);
 			System.out.println("Saving System...");
 			/*Writing the VFS to hard disk (in MyDisk.sys)*/
-			vfs.write(vfs, filePath);
+			vfs.write(filePath);
 			System.out.println("System Saved");
 			System.out.println("Program exited gracefully");
 		}
@@ -66,7 +66,7 @@ public class MainLine {
 			cmd(vfs);
 			System.out.println("Saving System...");
 			/*Writing the VFS to hard disk (in MyDisk.sys)*/
-			vfs.write(vfs, filePath);
+			vfs.write(filePath);
 			System.out.println("System Saved");
 			System.out.println("Program exited gracefully");
 		}
@@ -187,7 +187,7 @@ public class MainLine {
 		ois = new ObjectInputStream(fis);
 		int totalSize, usedSpace = 0;
 		ArrayList<Boolean> state = new ArrayList<>();
-		ArrayList<Block> spaces = new ArrayList<>();
+		ArrayList<EmptyBlock> spaces = new ArrayList<>();
 		totalSize = ois.readInt();
 		usedSpace = ois.readInt();
 		int numberOfSpaceState = ois.readInt();
@@ -195,7 +195,7 @@ public class MainLine {
 			int start = ois.readInt();
 			int end = ois.readInt();
 			boolean b = ois.readBoolean();
-			spaces.add(new Block(start, end, b));
+			spaces.add(new EmptyBlock(start, end, b));
 		}
 		numberOfSpaceState = ois.readInt();
 		for (int i = 0; i < numberOfSpaceState; ++i) {
@@ -203,7 +203,7 @@ public class MainLine {
 			state.add(b);
 		}
 		vfs = new FileSystem(totalSize);
-		vfs.iterativeRead(vfs, ois, 0, usedSpace);
+		vfs.iterativeRead(ois, 0, usedSpace);
 		vfs.setUsedSpace(usedSpace);
 		vfs.setSpaces(spaces);
 		vfs.setState(state);
