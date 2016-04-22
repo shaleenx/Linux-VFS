@@ -121,7 +121,15 @@ public class FileSystem {
 				 * implement worst-fit contiguous memory allocation
 				 * from best-fit memory allocation
 				 */
+//				System.out.println("Before");
+//		 		for(EmptyBlock bi: emptyBlocks){
+//		 			System.out.print(bi.size+" ");
+//		 		}
 				Collections.sort(emptyBlocks, new SpaceSizeCmp());
+//				System.out.println("After");
+//				for(EmptyBlock bi: emptyBlocks){
+//		 			System.out.print(bi.size+" ");
+//		 		}
 				return true;
 			}
 		}
@@ -349,7 +357,7 @@ public class FileSystem {
 				this.mkdir(currentPath);
 			}	
 			Directory dir = this.findDirectory(root, paths, 0);
-			System.out.println(currentPath+" "+dir.dirName);
+//			System.out.println(currentPath+" "+dir.dirName);
 			int fileListSize = ois.readInt();
 			ArrayList<MyFile> files = new ArrayList<>();
 			for (int i = 0; i < fileListSize; i++) {
@@ -405,9 +413,9 @@ public class FileSystem {
 		System.out.println("Total Size of Virtual Disk: "+this.totalSize + " Bytes");
 		System.out.println("Used Space: " + this.usedSpace + " Bytes");
 		System.out.println("Free Space: " + (this.totalSize - this.usedSpace) + " Bytes");
- 		for (int i = 0; i < state.size(); i++) {
-			System.out.println("Block:[" + i + "] is "
-					+ (state.get(i) ? "Allocated" : "Empty"));
-		}
+// 		for (int i = 0; i < state.size(); i++) {
+//			System.out.println("Block:[" + i + "] is "
+//					+ (state.get(i) ? "Allocated" : "Empty"));
+//		}
 	}
 }
