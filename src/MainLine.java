@@ -101,6 +101,21 @@ public class MainLine {
 					else
 						System.out.println("Error Creating File");
 					break;
+
+				case "edit":
+					if(input.length != 2){
+						System.out.println("edit - edit contents from the console into an existing file");
+						System.out.println("Usage: edit <path-from-root/filename>");
+						break;
+					}
+					System.out.println("Enter New Contents: ");
+					String contents1 = sc.nextLine().trim();
+					int size1 = contents1.length();
+					if(vfs.edit(input[1], contents1, size1))
+						System.out.println("File Edited");
+					else
+						System.out.println("File not found. Error Editing File");
+					break;
 				case "cat":
 					if(input.length != 2){
 						System.out.println("cat - print file on standard output");
@@ -161,14 +176,14 @@ public class MainLine {
 					break;
 				case "help":
 					System.out.println("Available Commands:");
-					System.out.println("echo, cat, rm, mkdir, rmdir, ls, top");
+					System.out.println("echo, edit, cat, rm, mkdir, rmdir, ls, top");
 					break;
 				case "exit":
 					break;
 				default:
 					System.out.println("Command Not Found");
 					System.out.println("Available Commands:");
-					System.out.println("echo, cat, rm, mkdir, rmdir, ls, top");
+					System.out.println("echo, edit, cat, rm, mkdir, rmdir, ls, top");
 					break;
 			}
 		}

@@ -61,6 +61,13 @@ public class FileSystem {
 		emptyBlocks = new ArrayList<>();
 		emptyBlocks.add(new EmptyBlock(0, totalSize - 1, false));
 	}
+	public boolean edit(String path, String contents, int fileSize){
+		if(!this.rm(path))
+			return false;
+		if(!this.create(path, contents, fileSize))
+			return false;
+		return true;
+	}
 
 	/*
 	 * Method to create new file
@@ -227,7 +234,7 @@ public class FileSystem {
 	 * Method to remove a directory
 	 */
 	public boolean rmdir(String path) {
-		String[] paths = path.trim().split("/");
+		String[] paths = (path).trim().split("/");
 		Directory iter;
 		iter = findDirectory(root, paths, 0);
 		if (iter != null) {
@@ -249,6 +256,7 @@ public class FileSystem {
 	 * Returns the size of the directory deleted.
 	 */
 	public int iterativeRmdir(Directory dir) {
+		System.out.println(dir.dirName);
 		int totalspace = 0;
 		for (MyFile file : dir.myFiles) {
 			for (EmptyBlock blocki : emptyBlocks) {
