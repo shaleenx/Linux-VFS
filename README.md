@@ -16,4 +16,4 @@ The project has been undertaken with the intention of learning how files are man
 
 Undertook as part of IT308 Operating Systems Course Project
 
-Credits: Modern Operating Systems (Andrew S. Tannebaum)
+Credits: Modern Operating Systems (Andrew S. Tanenbaum)
